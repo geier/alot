@@ -316,15 +316,18 @@ class ThreadBuffer(Buffer):
 
     modename = 'thread'
 
-    def __init__(self, ui, thread):
+    def __init__(self, ui, thread, highlightpatterns=None):
         """
         :param ui: main UI
         :type ui: :class:`~alot.ui.UI`
         :param thread: thread to display
         :type thread: :class:`~alot.db.Thread`
+        :param highlightpatterns: list of patterns to highlight in bodies
+        :type highlightpatterns: list(str)
         """
         self.thread = thread
         self.message_count = thread.get_total_messages()
+        self._highlightpatterns = highlightpatterns
 
         # two semaphores for auto-removal of unread tag
         self._auto_unread_dont_touch_mids = set([])
@@ -358,7 +361,7 @@ class ThreadBuffer(Buffer):
             self.message_count = 0
             return
 
-        self._tree = ThreadTree(self.thread)
+        self._tree = ThreadTree(self.thread, self._highlightpatterns)
 
         bars_att = settings.get_theming_attribute('thread', 'arrow_bars')
         heads_att = settings.get_theming_attribute('thread', 'arrow_heads')

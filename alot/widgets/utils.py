@@ -41,3 +41,15 @@ class DialogBox(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         return self.body.keypress(size, key)
+
+
+def breakupsearchstring(search):
+    operators = ['not', 'and', 'or']
+    fulltextsearchterms = list()
+    parts = search.split()
+    for part in parts:
+        if part.lower() in operators:
+            continue
+        elif ':' not in part:
+            fulltextsearchterms.append(part)
+    return fulltextsearchterms

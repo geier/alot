@@ -85,12 +85,15 @@ class FocusableText(urwid.Text):
 
 
 class TextlinesList(SimpleTree):
-    def __init__(self, content, attr=None, attr_focus=None):
+    def __init__(self, content, attr=None, attr_focus=None, highlight_patterns=None):
         """
         :class:`SimpleTree` that contains a list of all-level-0 Text widgets
         for each line in content.
         """
-        pattern = 'Freifunk'
+        if highlight_patterns:
+            pattern = highlight_patterns[0]
+        else:
+            patterns = ''
         prog = re.compile('({})'.format(pattern))
         structure = []
         highlight = urwid.AttrSpec('dark gray', 'dark magenta')
@@ -154,13 +157,15 @@ class MessageTree(CollapsibleTree):
 
     Collapsing this message corresponds to showing the summary only.
     """
-    def __init__(self, message, odd=True):
+    def __init__(self, message, odd=True, highlightpatterns=None):
         """
         :param message: Message to display
         :type message: alot.db.Message
         :param odd: theme summary widget as if this is an odd line
                     (in the message-pile)
         :type odd: bool
+        :param highlightpatterns: list of patterns which should be highlighted
+        :type highlightpatterns: list(str)
         """
         self._message = message
         self._odd = odd
@@ -171,6 +176,7 @@ class MessageTree(CollapsibleTree):
         self.display_all_headers = False
         self._all_headers_tree = None
         self._default_headers_tree = None
+        self._highlightpatterns = highlightpatterns
         self.display_attachments = True
         self._attachments = None
         self._maintree = SimpleTree(self._assemble_structure())
@@ -234,7 +240,7 @@ class MessageTree(CollapsibleTree):
             sourcetxt = self._message.get_email().as_string()
             att = settings.get_theming_attribute('thread', 'body')
             att_focus = settings.get_theming_attribute('thread', 'body_focus')
-            self._sourcetree = TextlinesList(sourcetxt, att, att_focus)
+            self._sourcetree = TextlinesList(sourcetxt, att, att_focus, self._highlightpatterns)
         return self._sourcetree
 
     def _get_body(self):
@@ -244,7 +250,7 @@ class MessageTree(CollapsibleTree):
                 att = settings.get_theming_attribute('thread', 'body')
                 att_focus = settings.get_theming_attribute(
                     'thread', 'body_focus')
-                self._bodytree = TextlinesList(bodytxt, att, att_focus)
+                self._bodytree = TextlinesList(bodytxt, att, att_focus, self._highlightpatterns)
         return self._bodytree
 
     def replace_bodytext(self, txt):
@@ -252,7 +258,7 @@ class MessageTree(CollapsibleTree):
         if txt:
             att = settings.get_theming_attribute('thread', 'body')
             att_focus = settings.get_theming_attribute('thread', 'body_focus')
-            self._bodytree = TextlinesList(txt, att, att_focus)
+            self._bodytree = TextlinesList(txt, att, att_focus, self._highlightpatterns)
 
     def _get_headers(self):
         if self.display_all_headers is True:
@@ -327,7 +333,7 @@ class ThreadTree(Tree):
     messages. As MessageTreess are *not* urwid widgets themself this is to be
     used in combination with :class:`NestedTree` only.
     """
-    def __init__(self, thread):
+    def __init__(self, thread, highlightpatterns):
         self._thread = thread
         self.root = thread.get_toplevel_messages()[0].get_message_id()
         self._parent_of = {}
@@ -336,11 +342,12 @@ class ThreadTree(Tree):
         self._next_sibling_of = {}
         self._prev_sibling_of = {}
         self._message = {}
+        self._highlightpatterns = highlightpatterns
 
         def accumulate(msg, odd=True):
             """recursively read msg and its replies"""
             mid = msg.get_message_id()
-            self._message[mid] = MessageTree(msg, odd)
+            self._message[mid] = MessageTree(msg, odd, self._highlightpatterns)
             odd = not odd
             last = None
             self._first_child_of[mid] = None

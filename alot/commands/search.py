@@ -11,6 +11,7 @@ from .. import commands
 
 from .. import buffers
 from ..db.errors import DatabaseROError
+from ..widgets.utils import breakupsearchstring
 
 
 MODE = 'search'
@@ -34,8 +35,9 @@ class OpenThreadCommand(Command):
         if self.thread:
             query = ui.current_buffer.querystring
             logging.info('open thread view for %s', self.thread)
+            highlightpatterns = breakupsearchstring(ui.current_buffer.querystring)
 
-            sb = buffers.ThreadBuffer(ui, self.thread)
+            sb = buffers.ThreadBuffer(ui, self.thread, highlightpatterns)
             ui.buffer_open(sb)
             sb.unfold_matching(query)
 
