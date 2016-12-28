@@ -94,7 +94,7 @@ class TextlinesList(SimpleTree):
             pattern = highlight_patterns[0]
         else:
             patterns = ''
-        prog = re.compile('({})'.format(pattern))
+        prog = re.compile('({})'.format(pattern), re.I)
         structure = []
         highlight = urwid.AttrSpec('dark gray', 'dark magenta')
 
@@ -333,7 +333,7 @@ class ThreadTree(Tree):
     messages. As MessageTreess are *not* urwid widgets themself this is to be
     used in combination with :class:`NestedTree` only.
     """
-    def __init__(self, thread, highlightpatterns):
+    def __init__(self, thread, highlightpatterns=None):
         self._thread = thread
         self.root = thread.get_toplevel_messages()[0].get_message_id()
         self._parent_of = {}
