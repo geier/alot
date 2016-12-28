@@ -73,12 +73,8 @@ class MessageSummaryWidget(urwid.WidgetWrap):
         return key
 
 
-class FocusableText(urwid.WidgetWrap):
+class FocusableText(urwid.Text):
     """Selectable Text used for nodes in our example"""
-    def __init__(self, txt, att, att_focus):
-        t = urwid.Text(txt)
-        w = urwid.AttrMap(t, att, att_focus)
-        urwid.WidgetWrap.__init__(self, w)
 
     def selectable(self):
         return True
