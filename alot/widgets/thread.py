@@ -4,6 +4,7 @@
 """
 Widgets specific to thread mode
 """
+import re
 import logging
 import urwid
 from urwidtrees import Tree, SimpleTree, CollapsibleTree
@@ -89,9 +90,19 @@ class TextlinesList(SimpleTree):
         :class:`SimpleTree` that contains a list of all-level-0 Text widgets
         for each line in content.
         """
+        pattern = 'Freifunk'
+        prog = re.compile('({})'.format(pattern))
         structure = []
+        highlight = urwid.AttrSpec('dark gray', 'dark magenta')
+
         for line in content.splitlines():
-            structure.append((FocusableText(line, attr, attr_focus), None))
+            words = prog.split(line)
+
+            content = FocusableText(
+                [(highlight, part) if prog.match(part) else (attr, part) for part in words]
+            )
+
+            structure.append((content, None))
         SimpleTree.__init__(self, structure)
 
 
