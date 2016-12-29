@@ -74,8 +74,22 @@ class MessageSummaryWidget(urwid.WidgetWrap):
         return key
 
 
-class FocusableText(urwid.Text):
+class SimpleFocusableText(urwid.Text):
     """Selectable Text used for nodes in our example"""
+    # TODO remove whole class
+    def selectable(self):
+        return True
+
+    def keypress(self, size, key):
+        return key
+
+
+class FocusableText(urwid.WidgetWrap):
+    """Selectable Text used for nodes in our example"""
+    def __init__(self, txt, att, att_focus):
+        t = urwid.Text(txt)
+        w = urwid.AttrMap(t, att, att_focus)
+        urwid.WidgetWrap.__init__(self, w)
 
     def selectable(self):
         return True
@@ -90,22 +104,23 @@ class TextlinesList(SimpleTree):
         :class:`SimpleTree` that contains a list of all-level-0 Text widgets
         for each line in content.
         """
-        if highlight_patterns:
-            pattern = highlight_patterns[0]
-        else:
-            patterns = ''
-        prog = re.compile('({})'.format(pattern), re.I)
         structure = []
-        highlight = urwid.AttrSpec('dark gray', 'dark magenta')
+        highlight = urwid.AttrSpec('dark gray', 'dark magenta')  # TODO move to color scheme
 
-        for line in content.splitlines():
-            words = prog.split(line)
+        if highlight_patterns:
+            pattern = '|'.join((re.escape(pattern) for pattern in highlight_patterns))
+            prog = re.compile('({})'.format(pattern), re.I)
+            for line in content.splitlines():
+                words = prog.split(line)
+                # TODO make use of FocusableText here
+                content = SimpleFocusableText(
+                    [(highlight, part) if prog.match(part) else (attr, part) for part in words]
+                )
+                structure.append((content, None))
+        else:
+            for line in content.splitlines():
+                structure.append((FocusableText(line, attr, attr_focus), None))
 
-            content = FocusableText(
-                [(highlight, part) if prog.match(part) else (attr, part) for part in words]
-            )
-
-            structure.append((content, None))
         SimpleTree.__init__(self, structure)
 
 
