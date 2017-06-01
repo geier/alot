@@ -142,7 +142,7 @@ def message_from_file(handle):
                 sigs = crypto.verify_detached(m.get_payload(0).as_string(),
                                               m.get_payload(1).get_payload())
             except GPGProblem as e:
-                malformed = unicode(e)
+                malformed = str(e)
 
         add_signature_headers(m, sigs, malformed)
 
@@ -178,7 +178,7 @@ def message_from_file(handle):
                 # the combined method is used, currently this prevents
                 # the interpretation of the recovered plain text
                 # mail. maybe that's a feature.
-                malformed = unicode(e)
+                malformed = str(e)
             else:
                 # parse decrypted message
                 n = message_from_string(d)
@@ -357,11 +357,12 @@ def decode_header(header, normalize=False):
     :type header: str
     :param normalize: replace trailing spaces after newlines
     :type normalize: bool
-    :rtype: unicode
+    :rtype: str
     """
 
     # If the value isn't ascii as RFC2822 prescribes,
     # we just return the unicode bytestring as is
+    # XXX: this prbably isn't going to work in python 3
     value = string_decode(header)  # convert to unicode
     try:
         value = value.encode('ascii')
