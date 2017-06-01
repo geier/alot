@@ -343,3 +343,7 @@ class TagWidget(urwid.AttrMap):
         if not isinstance(other, TagWidget):
             return NotImplemented
         return self.translated.lower() != other.translated.lower()
+
+    def __hash__(self):
+        # XXX: is TagWidget immutable?
+        return hash((self.tag, self.translated, self.txt))
