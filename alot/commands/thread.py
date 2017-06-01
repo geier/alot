@@ -14,7 +14,7 @@ from email.utils import getaddresses, parseaddr, formataddr
 from email.message import Message
 
 from twisted.internet.defer import inlineCallbacks
-from cStringIO import StringIO
+from io import StringIO
 
 from . import Command, registerCommand
 from .globals import ExternalCommand

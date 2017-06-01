@@ -9,7 +9,7 @@ from __future__ import division
 from datetime import timedelta
 from datetime import datetime
 from collections import deque
-from cStringIO import StringIO
+from io import StringIO
 import logging
 import mimetypes
 import os

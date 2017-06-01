@@ -4,7 +4,7 @@
 from __future__ import absolute_import
 
 import os
-from cStringIO import StringIO
+from io import StringIO
 import gpgme
 from .errors import GPGProblem, GPGCode
 

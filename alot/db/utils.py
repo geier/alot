@@ -12,7 +12,7 @@ import tempfile
 import re
 import logging
 import mailcap
-from cStringIO import StringIO
+from io import StringIO
 
 from .. import crypto
 from .. import helper
