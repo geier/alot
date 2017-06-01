@@ -114,7 +114,7 @@ class SaveCommand(Command):
         envelope = ui.current_buffer.envelope
 
         # determine account to use
-        _, saddr = email.Utils.parseaddr(envelope.get('From'))
+        _, saddr = email.utils.parseaddr(envelope.get('From'))
         account = settings.get_account_by_address(saddr)
         if account is None:
             if not settings.get_accounts():
@@ -131,7 +131,7 @@ class SaveCommand(Command):
         mail = envelope.construct_mail()
         # store mail locally
         # add Date header
-        mail['Date'] = email.Utils.formatdate(localtime=True)
+        mail['Date'] = email.utils.formatdate(localtime=True)
         path = account.store_draft_mail(email_as_string(mail))
 
         msg = 'draft saved successfully'
@@ -201,7 +201,7 @@ class SendCommand(Command):
 
             try:
                 self.mail = self.envelope.construct_mail()
-                self.mail['Date'] = email.Utils.formatdate(localtime=True)
+                self.mail['Date'] = email.utils.formatdate(localtime=True)
                 self.mail = email_as_string(self.mail)
             except GPGProblem as e:
                 ui.clear_notify([clearme])
@@ -214,7 +214,7 @@ class SendCommand(Command):
         msg = self.mail
         if not isinstance(msg, email.message.Message):
             msg = email.message_from_string(self.mail)
-        _, saddr = email.Utils.parseaddr(msg.get('From', ''))
+        _, saddr = email.utils.parseaddr(msg.get('From', ''))
         account = settings.get_account_by_address(saddr)
         if account is None:
             if not settings.get_accounts():
