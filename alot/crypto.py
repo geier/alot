@@ -205,7 +205,7 @@ def verify_detached(message, signature):
     try:
         return ctx.verify(signature_data, message_data, None)
     except gpgme.GpgmeError as e:
-        raise GPGProblem(e.message, code=e.code)
+        raise GPGProblem(str(e), code=e.code)
 
 
 def decrypt_verify(encrypted):
@@ -224,7 +224,7 @@ def decrypt_verify(encrypted):
     try:
         sigs = ctx.decrypt_verify(encrypted_data, plaintext_data)
     except gpgme.GpgmeError as e:
-        raise GPGProblem(e.message, code=e.code)
+        raise GPGProblem(str(e), code=e.code)
 
     plaintext_data.seek(0, os.SEEK_SET)
     return sigs, plaintext_data.read()

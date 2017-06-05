@@ -174,7 +174,7 @@ class UI(object):
                     try:
                         self.apply_commandline(cmdline)
                     except CommandParseError as e:
-                        self.notify(e.message, priority='error')
+                        self.notify(str(e), priority='error')
                 # move keys are always passed
                 elif cmdline in ['move up', 'move down', 'move page up',
                                  'move page down']:
@@ -311,7 +311,7 @@ class UI(object):
 
         def cerror(e):
             logging.error(e)
-            self.notify('completion error: %s' % e.message,
+            self.notify('completion error: %s' % str(e),
                         priority='error')
             self.update()
 
