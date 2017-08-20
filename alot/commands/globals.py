@@ -9,6 +9,7 @@ import code
 import email
 import email.utils
 import glob
+import itertools
 import logging
 import os
 import subprocess
@@ -630,8 +631,7 @@ class HelpCommand(Command):
             globalmaps, modemaps = settings.get_keybindings(ui.mode)
 
             # build table
-            maxkeylength = len(max((modemaps).keys() + globalmaps.keys(),
-                                   key=len))
+            maxkeylength = max(len(key) for key in itertools.chain(modemaps, globalmaps))
             keycolumnwidth = maxkeylength + 2
 
             linewidgets = []
