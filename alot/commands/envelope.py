@@ -132,7 +132,7 @@ class SaveCommand(Command):
         # store mail locally
         # add Date header
         mail['Date'] = email.utils.formatdate(localtime=True)
-        path = account.store_draft_mail(email_as_string(mail))
+        path = account.store_draft_mail(email_as_string(mail))   # XXX FIXME
 
         msg = 'draft saved successfully'
 
@@ -159,11 +159,13 @@ class SendCommand(Command):
     def __init__(self, mail=None, envelope=None, **kwargs):
         """
         :param mail: email to send
-        :type email: email.message.Message
+        :type mail: email.message.Message
         :param envelope: envelope to use to construct the outgoing mail. This
                          will be ignored in case the mail parameter is set.
         :type envelope: alot.db.envelope.envelope
         """
+        assert isinstance(mail, (email.message.Message, type(None)))
+
         Command.__init__(self, **kwargs)
         self.mail = mail
         self.envelope = envelope
@@ -202,8 +204,8 @@ class SendCommand(Command):
             try:
                 self.mail = self.envelope.construct_mail()
                 self.mail['Date'] = email.utils.formatdate(localtime=True)
-                self.mail = email_as_string(self.mail)
-            except GPGProblem as e:
+                self.mail = bytes(self.mail)
+            except GGProblem as e:
                 ui.clear_notify([clearme])
                 ui.notify(str(e), priority='error')
                 return
@@ -223,10 +225,10 @@ class SendCommand(Command):
             else:
                 account = settings.get_accounts()[0]
 
-        # make sure self.mail is a string
+        # make sure self.mail is a byte string
         logging.debug(self.mail.__class__)
-        if isinstance(self.mail, email.message.Message):
-            self.mail = str(self.mail)
+        if isinstance(self.mail, email.message.Message):  # how can this still be the case: mail was converted to bytes above?
+            self.mail = bytes(self.mail)
 
         # define callback
         def afterwards(_):
@@ -244,7 +246,7 @@ class SendCommand(Command):
 
             # store mail locally
             # This can raise StoreMailError
-            path = account.store_sent_mail(self.mail)
+            path = account.store_sent_mail(self.mail)  # XXX check if this wants bytes or str
 
             # add mail to index if maildir path available
             if path is not None:
@@ -272,6 +274,8 @@ class SendCommand(Command):
         clearme = ui.notify('sending..', timeout=-1)
         if self.envelope is not None:
             self.envelope.sending = True
+
+        assert isinstance(self.mail, bytes)
         d = account.send_mail(self.mail)
         d.addCallback(afterwards)
         d.addErrback(send_errb)

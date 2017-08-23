@@ -193,10 +193,11 @@ class SendmailAccount(Account):
         """Pipe the given mail to the configured sendmail command.  Display a
         short message on success or a notification on error.
         :param mail: the mail to send out
-        :type mail: str
+        :type mail: bytes
         :returns: the deferred that calls the sendmail command
         :rtype: `twisted.internet.defer.Deferred`
         """
+        assert isinstance(mail, bytes)
         cmdlist = split_commandstring(self.cmd)
 
         def cb(out):
