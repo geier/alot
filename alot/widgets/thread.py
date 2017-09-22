@@ -1,4 +1,5 @@
 # Copyright (C) 2011-2012  Patrick Totzke <patricktotzke@gmail.com>
+# coding: utf-8
 # This file is released under the GNU GPL, version 3 or a later revision.
 # For further details see the COPYING file
 """
@@ -6,15 +7,102 @@ Widgets specific to thread mode
 """
 from __future__ import absolute_import
 
+import re
 import logging
 import urwid
-from urwidtrees import Tree, SimpleTree, CollapsibleTree
+from urwidtrees import Tree, SimpleTree, CollapsibleTree, DecoratedTree, NestedTree
+from urwidtrees.decoration import CollapseIconMixin
 
 from .globals import TagWidget
 from .globals import AttachmentWidget
 from ..settings.const import settings
 from ..db.utils import decode_header, X_SIGNATURE_MESSAGE_HEADER
 from ..db.utils import extract_body
+
+
+class CollapsibleIconTree(CollapseIconMixin, DecoratedTree):
+    """
+    Indent collapsible tree nodes according to their depth in the tree and
+    display icons indicating collapse-status in the gaps.
+    """
+    def __init__(self, walker, icon_offset=1, **kwargs):
+        """
+        :param walker: tree of widgets to be displayed
+        :type walker: Tree
+        :param indent: indentation width
+        :type indent: int
+        :param icon_offset: distance from icon to the eginning of the tree
+                            node.
+        :type icon_offset: int
+        """
+        self._icon_offset = icon_offset
+        DecoratedTree.__init__(self, walker)
+        CollapseIconMixin.__init__(self, **kwargs)
+
+    def decorate(self, pos, widget, is_first=True):
+        iwidth, icon = self._construct_collapse_icon(pos)
+        cols = []
+        void = urwid.SolidFill(' ')
+        line = None
+        # add icon only for non-leafs
+        is_leaf = self._tree.is_leaf(pos)
+        if not is_leaf:
+            if icon is not None:
+                # space to the left
+                cols.append((1, urwid.SolidFill(' ')))
+                # icon
+                icon_pile = urwid.Pile([void, ('pack', icon)])
+                cols.append((iwidth, icon_pile))
+            cols.append((self._icon_offset, urwid.SolidFill(' ')))
+        else:  # otherwise just add another spacer
+            cols.append((3, urwid.SolidFill(' ')))
+
+        cols.append(widget)  # original widget ]
+        # construct a Columns, defining all spacer as Box widgets
+        line = urwid.Columns(cols, box_columns=range(len(cols))[:-1])
+        return line
+
+
+# (?: ) is a non-capturing group
+reg = re.compile(r'^((?:> ?)+)?(.*)')
+
+
+def get_reply_levels(lines):
+    for num, line in enumerate(lines):
+        groups = reg.match(line).groups()
+        indendation = groups[0] or ''
+        content = groups[1] or ''
+        level = indendation.count('>')
+        yield level
+
+
+def build_tree_from_mail(lines, att, att_focus):
+    levels = list(get_reply_levels(lines))
+    oldlevel = last = 0
+    subtrees = []
+    for num, level in enumerate(levels):
+        while level > oldlevel:
+            new = FocusableText('\n'.join(lines[last:num]), att, att_focus)
+            subtrees.append(new)
+            last = num
+            oldlevel += 1
+    new = FocusableText('\n'.join(lines[last:num]), att, att_focus)
+    subtrees.append(new)
+
+    last = None
+    for subtree in subtrees[::-1]:
+        new = [(subtree, last)]
+        last = new
+    tree = CollapsibleIconTree(
+        last,
+        is_collapsed=lambda _: True,
+        icon_focussed_att='focus',
+        icon_frame_left_char=None,
+        icon_frame_right_char=None,
+        icon_expanded_char=u'▼',
+        icon_collapsed_char=u'▶',
+    )
+    return tree
 
 
 class MessageSummaryWidget(urwid.WidgetWrap):
@@ -243,7 +331,8 @@ class MessageTree(CollapsibleTree):
                 att = settings.get_theming_attribute('thread', 'body')
                 att_focus = settings.get_theming_attribute(
                     'thread', 'body_focus')
-                self._bodytree = TextlinesList(bodytxt, att, att_focus)
+                #self._bodytree = TextlinesList(bodytxt, att, att_focus)
+                self._bodytree = build_tree_from_mail(bodytxt.splitlines(), att, att_focus)
         return self._bodytree
 
     def _get_headers(self):
