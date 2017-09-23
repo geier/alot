@@ -174,7 +174,7 @@ class UI(object):
                     try:
                         self.apply_commandline(cmdline)
                     except CommandParseError as e:
-                        self.notify(e.message, priority='error')
+                        self.notify(str(e), priority='error')
                 # move keys are always passed
                 elif cmdline in ['move up', 'move down', 'move page up',
                                  'move page down']:
@@ -262,7 +262,7 @@ class UI(object):
         """
         Called by :class:`urwid.MainLoop` if a keypress was passed to the root
         widget by `self._input_filter` but is not handled in any widget. We
-        keep it for debuging purposes.
+        keep it for debugging purposes.
         """
         logging.debug('unhandled input: %s', key)
 

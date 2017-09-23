@@ -9,6 +9,7 @@ from __future__ import division
 from datetime import timedelta
 from datetime import datetime
 from collections import deque
+from io import BytesIO
 from cStringIO import StringIO
 import logging
 import mimetypes
@@ -128,7 +129,7 @@ def string_decode(string, enc='ascii'):
 def shorten(string, maxlen):
     """shortens string if longer than maxlen, appending ellipsis"""
     if 1 < maxlen < len(string):
-        string = string[:maxlen - 1] + u'\u2026'
+        string = string[:maxlen - 1] + u'…'
     return string[:maxlen]
 
 
@@ -315,8 +316,8 @@ def call_cmd_async(cmdlist, stdin=None, env=None):
     class _EverythingGetter(ProcessProtocol):
         def __init__(self, deferred):
             self.deferred = deferred
-            self.outBuf = StringIO()
-            self.errBuf = StringIO()
+            self.outBuf = BytesIO()
+            self.errBuf = BytesIO()
             self.outReceived = self.outBuf.write
             self.errReceived = self.errBuf.write
 
@@ -332,7 +333,7 @@ def call_cmd_async(cmdlist, stdin=None, env=None):
                 self.deferred.errback(terminated_obj)
 
     d = Deferred()
-    environment = os.environ
+    environment = os.environ.copy()
     if env is not None:
         environment.update(env)
     logging.debug('ENV = %s', environment)
@@ -585,7 +586,7 @@ def RFC3156_canonicalize(text):
     This function works as follows (in that order):
 
     1. Convert all line endings to \\\\r\\\\n (DOS line endings).
-    2. Encode all occurences of "From " at the beginning of a line
+    2. Encode all occurrences of "From " at the beginning of a line
        to "From=20" in order to prevent other mail programs to replace
        this with "> From" (to avoid MBox conflicts) and thus invalidate
        the signature.

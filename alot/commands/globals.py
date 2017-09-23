@@ -12,7 +12,7 @@ import glob
 import logging
 import os
 import subprocess
-from StringIO import StringIO
+from io import StringIO
 
 import urwid
 from twisted.internet.defer import inlineCallbacks
@@ -78,7 +78,8 @@ class ExitCommand(Command):
 
         if ui.db_was_locked:
             msg = 'Database locked. Exit without saving?'
-            if (yield ui.choice(msg, msg_position='left', cancel='no')) == 'no':
+            response = yield ui.choice(msg, msg_position='left', cancel='no')
+            if response == 'no':
                 return
             ui.exit()
 
@@ -247,7 +248,7 @@ class ExternalCommand(Command):
         # set standard input for subcommand
         stdin = None
         if self.stdin is not None:
-            # wrap strings in StrinIO so that they behaves like a file
+            # wrap strings in StringIO so that they behave like files
             if isinstance(self.stdin, unicode):
                 stdin = StringIO(self.stdin)
             else:
@@ -255,7 +256,7 @@ class ExternalCommand(Command):
 
         def afterwards(data):
             if data == 'success':
-                if callable(self.on_success):
+                if self.on_success is not None:
                     self.on_success()
             else:
                 ui.notify(data, priority='error')
@@ -267,23 +268,16 @@ class ExternalCommand(Command):
 
         def thread_code(*_):
             try:
-                if stdin is None:
-                    proc = subprocess.Popen(self.cmdlist, shell=self.shell,
-                                            stderr=subprocess.PIPE)
-                    ret = proc.wait()
-                    err = proc.stderr.read()
-                else:
-                    proc = subprocess.Popen(self.cmdlist, shell=self.shell,
-                                            stdin=subprocess.PIPE,
-                                            stderr=subprocess.PIPE)
-                    _, err = proc.communicate(stdin.read())
-                    ret = proc.wait()
-                if ret == 0:
-                    return 'success'
-                else:
-                    return err.strip()
+                proc = subprocess.Popen(self.cmdlist, shell=self.shell,
+                                        stdin=subprocess.PIPE if stdin else None,
+                                        stderr=subprocess.PIPE)
             except OSError as e:
                 return str(e)
+
+            _, err = proc.communicate(stdin.read() if stdin else None)
+            if proc.returncode == 0:
+                return 'success'
+            return err.strip()
 
         if self.in_thread:
             d = threads.deferToThread(thread_code)
@@ -862,8 +856,9 @@ class ComposeCommand(Command):
                 self.envelope.sign = account.sign_by_default
                 self.envelope.sign_key = account.gpg_key
             else:
-                msg = 'Cannot find gpg key for account {}'.format(account.address)
-                logging.warn(msg)
+                msg = 'Cannot find gpg key for account {}'
+                msg = msg.format(account.address)
+                logging.warning(msg)
                 ui.notify(msg, priority='error')
 
         # get missing To header
@@ -917,7 +912,8 @@ class ComposeCommand(Command):
             logging.debug("Trying to encrypt message because "
                           "account.encrypt_by_default=%s",
                           account.encrypt_by_default)
-            yield set_encrypt(ui, self.envelope, block_error=self.encrypt, signed_only=True)
+            yield set_encrypt(ui, self.envelope, block_error=self.encrypt,
+                              signed_only=True)
         else:
             logging.debug("No encryption by default, encrypt_by_default=%s",
                           account.encrypt_by_default)

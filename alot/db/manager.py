@@ -125,7 +125,7 @@ class DBManager(object):
                     cmd, afterwards = current_item[:2]
                     logging.debug('cmd created')
 
-                    # aquire a writeable db handler
+                    # acquire a writeable db handler
                     try:
                         mode = Database.MODE.READ_WRITE
                         db = Database(path=self.path, mode=mode)
@@ -274,7 +274,7 @@ class DBManager(object):
         """returns :class:`notmuch.database.Thread` with given id"""
         query = self.query('thread:' + tid)
         try:
-            return query.search_threads().next()
+            return next(query.search_threads())
         except StopIteration:
             errmsg = 'no thread with id %s exists!' % tid
             raise NonexistantObjectError(errmsg)
@@ -364,7 +364,7 @@ class DBManager(object):
         os.close(stderr[1])
 
         # closing the sending end in this (receiving) process guarantees
-        # that here the apropriate EOFError is raised upon .recv in the walker
+        # that here the appropriate EOFError is raised upon .recv in the walker
         sender.close()
         return receiver, process
 
@@ -377,7 +377,8 @@ class DBManager(object):
         :param sort: Sort order. one of ['oldest_first', 'newest_first',
                      'message_id', 'unsorted']
         :type query: str
-        :param exclude_tags: Tags to exclude by default unless included in the search
+        :param exclude_tags: Tags to exclude by default unless included in the
+                             search
         :type exclude_tags: list of str
         :returns: a pipe together with the process that asynchronously
                   writes to it.

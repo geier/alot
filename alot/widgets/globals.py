@@ -7,7 +7,6 @@ This contains alot-specific :class:`urwid.Widget` used in more than one mode.
 """
 from __future__ import absolute_import
 
-import functools
 import re
 import operator
 import urwid
@@ -87,8 +86,8 @@ class CompleteEdit(urwid.Edit):
 
     The interpretation of some keypresses is hard-wired:
         :enter: calls 'on_exit' callback with current value
-        :esc/ctrl g: calls 'on_exit' with value `None`, which can be interpreted
-              as cancelation
+        :esc/ctrl g: calls 'on_exit' with value `None`, which can be
+                     interpreted as cancellation
         :tab: calls the completer and tabs forward in the result list
         :shift tab: tabs backward in the result list
         :up/down: move in the local input history
@@ -272,7 +271,6 @@ class HeadersList(urwid.WidgetWrap):
         return headerlines
 
 
-@functools.total_ordering
 class TagWidget(urwid.AttrMap):
     """
     text widget that renders a tagstring.
@@ -280,7 +278,7 @@ class TagWidget(urwid.AttrMap):
     It looks up the string it displays in the `tags` section
     of the config as well as custom theme settings for its tag.
 
-    Atributes that should be considered publicly readable:
+    Attributes that should be considered publicly readable:
         :attr tag: the notmuch tag
         :type tag: str
     """
@@ -292,6 +290,7 @@ class TagWidget(urwid.AttrMap):
         self.translated = representation['translated']
         self.hidden = self.translated == ''
         self.txt = urwid.Text(self.translated, wrap='clip')
+        self.__hash = hash((self.translated, self.txt))
         normal_att = representation['normal']
         focus_att = representation['focussed']
         self.attmaps = {'normal': normal_att, 'focus': focus_att}
@@ -317,11 +316,8 @@ class TagWidget(urwid.AttrMap):
     def set_unfocussed(self):
         self.set_attr_map(self.attmaps['normal'])
 
-    def __lt__(self, other):
-        """Groups tags of 1 character first, then alphabetically.
-
-        This groups tags unicode characters at the begnining.
-        """
+    def __cmp(self, other, comparitor):
+        """Shared comparison method."""
         if not isinstance(other, TagWidget):
             return NotImplemented
 
@@ -329,8 +325,24 @@ class TagWidget(urwid.AttrMap):
         oth_len = len(other.translated)
 
         if (self_len == 1) is not (oth_len == 1):
-            return self_len < oth_len
-        return self.translated.lower() < other.translated.lower()
+            return comparitor(self_len, oth_len)
+        return comparitor(self.translated.lower(), other.translated.lower())
+
+    def __lt__(self, other):
+        """Groups tags of 1 character first, then alphabetically.
+
+        This groups tags unicode characters at the begnining.
+        """
+        return self.__cmp(other, operator.lt)
+
+    def __gt__(self, other):
+        return self.__cmp(other, operator.gt)
+
+    def __ge__(self, other):
+        return self.__cmp(other, operator.ge)
+
+    def __le__(self, other):
+        return self.__cmp(other, operator.le)
 
     def __eq__(self, other):
         if not isinstance(other, TagWidget):
@@ -343,3 +355,6 @@ class TagWidget(urwid.AttrMap):
         if not isinstance(other, TagWidget):
             return NotImplemented
         return self.translated.lower() != other.translated.lower()
+
+    def __hash__(self):
+        return self.__hash

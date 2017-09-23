@@ -45,13 +45,23 @@ class Message(object):
         except ValueError:
             self._datetime = None
         self._filename = msg.get_filename()
-        try:
-            self._from = decode_header(msg.get_header('From'))
-        except NullPointerError:
-            self._from = ''
         self._email = None  # will be read upon first use
         self._attachments = None  # will be read upon first use
         self._tags = set(msg.get_tags())
+
+        try:
+            sender = decode_header(msg.get_header('From'))
+            if not sender:
+                sender = decode_header(msg.get_header('Sender'))
+        except NullPointerError:
+            sender = None
+        if sender:
+            self._from = sender
+        elif 'draft' in self._tags:
+            acc = settings.get_accounts()[0]
+            self._from = '"{}" <{}>'.format(acc.realname, unicode(acc.address))
+        else:
+            self._from = '"Unknown" <>'
 
     def __str__(self):
         """prettyprint the message"""
@@ -66,17 +76,17 @@ class Message(object):
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
-            return self.get_message_id() == other.get_message_id()
+            return self._id == other.get_message_id()
         return NotImplemented
 
     def __ne__(self, other):
         if isinstance(other, type(self)):
-            return self.get_message_id() != other.get_message_id()
+            return self._id != other.get_message_id()
         return NotImplemented
 
     def __lt__(self, other):
         if isinstance(other, type(self)):
-            return self.get_message_id() < other.get_message_id()
+            return self._id < other.get_message_id()
         return NotImplemented
 
     def get_email(self):
@@ -116,8 +126,7 @@ class Message(object):
 
     def get_tags(self):
         """returns tags attached to this message as list of strings"""
-        l = sorted(self._tags)
-        return l
+        return sorted(self._tags)
 
     def get_thread(self):
         """returns the :class:`~alot.db.Thread` this msg belongs to"""

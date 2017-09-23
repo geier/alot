@@ -332,28 +332,36 @@ thread_focus_linewise = boolean(default=True)
         # Outgoing messages will be GPG signed by default if this is set to True.
         sign_by_default = boolean(default=False)
 
-	# Alot will try to GPG encrypt outgoing messages by default when this
-	# is set to `all` or `trusted`.  If set to `all` the message will be
-	# encrypted for all recipients for who a key is available in the key
-	# ring.  If set to `trusted` it will be encrypted to all
-	# recipients if a trusted key is available for all recipients (one
-	# where the user id for the key is signed with a trusted signature).
-	#
-	# .. note:: If the message will not be encrypted by default you can
-	#           still use the :ref:`toggleencrypt
-	#           <cmd.envelope.toggleencrypt>`, :ref:`encrypt
-	#           <cmd.envelope.encrypt>` and :ref:`unencrypt
-	#           <cmd.envelope.unencrypt>` commands to encrypt it.
-	# .. note:: The values `True` and `False` are interpreted as `all` and
-	#           `none` respectively.  They are kept for backwards
-	#           compatibility to give users a change to migrate to the new
-	#           option type.  They might become deprecated in future
-	#           versions.
+        # Alot will try to GPG encrypt outgoing messages by default when this
+        # is set to `all` or `trusted`.  If set to `all` the message will be
+        # encrypted for all recipients for who a key is available in the key
+        # ring.  If set to `trusted` it will be encrypted to all
+        # recipients if a trusted key is available for all recipients (one
+        # where the user id for the key is signed with a trusted signature).
+        #
+        # .. note:: If the message will not be encrypted by default you can
+        #           still use the :ref:`toggleencrypt
+        #           <cmd.envelope.toggleencrypt>`, :ref:`encrypt
+        #           <cmd.envelope.encrypt>` and :ref:`unencrypt
+        #           <cmd.envelope.unencrypt>` commands to encrypt it.
+        # .. deprecated:: 0.4
+        #           The values `True` and `False` are interpreted as `all` and
+        #           `none` respectively. `0`, `1`, `true`, `True`, `false`,
+        #           `False`, `yes`, `Yes`, `no`, `No`, will be removed before
+        #           1.0, please move to `all`, `none`, or `trusted`.
         encrypt_by_default = option('all', 'none', 'trusted', 'True', 'False', 'true', 'false', 'Yes', 'No', 'yes', 'no', '1', '0', default='none')
 
         # The GPG key ID you want to use with this account. If unset, alot will
         # use your default key.
         gpg_key = gpg_key_hint(default=None)
+
+        # Whether the server treats the address as case-senstive or
+        # case-insensitve (True for the former, False for the latter)
+        #
+        # .. note:: The vast majority (if not all) SMTP servers in modern use
+        #           treat usernames as case insenstive, you should only set
+        #           this if you know that you need it.
+        case_sensitive_username = boolean(default=False)
 
         # address book for this account
         [[[abook]]]

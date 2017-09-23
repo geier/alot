@@ -14,7 +14,7 @@ from email.utils import getaddresses, parseaddr, formataddr
 from email.message import Message
 
 from twisted.internet.defer import inlineCallbacks
-from cStringIO import StringIO
+from io import BytesIO
 
 from . import Command, registerCommand
 from .globals import ExternalCommand
@@ -71,11 +71,13 @@ def determine_sender(mail, action='reply'):
         # pick the most important account that has an address in candidates
         # and use that accounts realname and the address found here
         for account in my_accounts:
-            acc_addresses = [re.escape(a) for a in account.get_addresses()]
+            acc_addresses = [re.escape(unicode(a)) for a in account.get_addresses()]
             if account.alias_regexp is not None:
                 acc_addresses.append(account.alias_regexp)
             for alias in acc_addresses:
-                regex = re.compile('^' + alias + '$', flags=re.IGNORECASE)
+                regex = re.compile(
+                    u'^' + unicode(alias) + u'$',
+                    flags=re.IGNORECASE if not account.address.case_sensitive else 0)
                 for seen_name, seen_address in candidate_addresses:
                     if regex.match(seen_address):
                         logging.debug("match!: '%s' '%s'", seen_address, alias)
@@ -186,7 +188,7 @@ class ReplyCommand(Command):
         try:
             from_header, _ = determine_sender(mail, 'reply')
         except AssertionError as e:
-            ui.notify(e.message, priority='error')
+            ui.notify(str(e), priority='error')
             return
         envelope.add('From', from_header)
 
@@ -394,7 +396,7 @@ class ForwardCommand(Command):
         try:
             from_header, _ = determine_sender(mail, 'reply')
         except AssertionError as e:
-            ui.notify(e.message, priority='error')
+            ui.notify(str(e), priority='error')
             return
         envelope.add('From', from_header)
 
@@ -441,7 +443,7 @@ class BounceMailCommand(Command):
         try:
             resent_from_header, account = determine_sender(mail, 'bounce')
         except AssertionError as e:
-            ui.notify(e.message, priority='error')
+            ui.notify(str(e), priority='error')
             return
         mail['Resent-From'] = resent_from_header
 
@@ -731,7 +733,7 @@ class PipeCommand(Command):
         if self.shell:
             self.cmd = [' '.join(self.cmd)]
 
-        # do teh monkey
+        # do the monkey
         for mail in pipestrings:
             if self.background:
                 logging.debug('call in background: %s', self.cmd)
@@ -970,7 +972,7 @@ class OpenAttachmentCommand(Command):
                 def afterwards():
                     os.unlink(tempfile_name)
             else:
-                handler_stdin = StringIO()
+                handler_stdin = BytesIO()
                 self.attachment.write(handler_stdin)
 
             # create handler command list
@@ -1108,7 +1110,7 @@ class TagCommand(Command):
         :type action: str
         :param all: tag all messages in thread
         :type all: bool
-        :param flush: imediately write out to the index
+        :param flush: immediately write out to the index
         :type flush: bool
         """
         self.tagsstring = tags

@@ -25,7 +25,8 @@ from .theme import Theme
 
 
 DEFAULTSPATH = os.path.join(os.path.dirname(__file__), '..', 'defaults')
-DATA_DIRS = os.environ.get('XDG_DATA_DIRS', '/usr/local/share:/usr/share').split(':')
+DATA_DIRS = os.environ.get('XDG_DATA_DIRS',
+                           '/usr/local/share:/usr/share').split(':')
 
 
 class SettingsManager(object):
@@ -37,8 +38,10 @@ class SettingsManager(object):
         :param notmuch_rc: path to notmuch's config file
         :type notmuch_rc: str
         """
-        assert alot_rc is None or (isinstance(alot_rc, basestring) and os.path.exists(alot_rc))
-        assert notmuch_rc is None or (isinstance(notmuch_rc, basestring) and os.path.exists(notmuch_rc))
+        assert alot_rc is None or (isinstance(alot_rc, basestring) and
+                                   os.path.exists(alot_rc))
+        assert notmuch_rc is None or (isinstance(notmuch_rc, basestring) and
+                                      os.path.exists(notmuch_rc))
         self.hooks = None
         self._mailcaps = mailcap.getcaps()
         self._notmuchconfig = None
@@ -62,7 +65,8 @@ class SettingsManager(object):
         Implementation Detail: this is the same code called by the constructor
         to set bindings at alot startup.
         """
-        self._bindings = ConfigObj(os.path.join(DEFAULTSPATH, 'default.bindings'))
+        self._bindings = ConfigObj(os.path.join(DEFAULTSPATH,
+                                                'default.bindings'))
         self.read_notmuch_config()
         self.read_config()
 
@@ -123,7 +127,7 @@ class SettingsManager(object):
                     except ConfigError as e:
                         logging.warning(
                             'Theme file %s failed validation: %s',
-                            themestring, str(e.message))
+                            themestring, e)
                     else:
                         break
             else:
@@ -434,7 +438,7 @@ class SettingsManager(object):
             the default account wil be returned
         :rtype: :class:`Account`
         :raises ~alot.settings.errors.NoMatchingAccount: If no account can be
-            found. Thsi includes if return_default is True and there are no
+            found. This includes if return_default is True and there are no
             accounts defined.
         """
         _, address = email.utils.parseaddr(address)

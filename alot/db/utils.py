@@ -15,7 +15,7 @@ import tempfile
 import re
 import logging
 import mailcap
-from cStringIO import StringIO
+from io import BytesIO
 
 from .. import crypto
 from .. import helper
@@ -45,6 +45,8 @@ def add_signature_headers(mail, sigs, error_msg):
                       string indicating no error
     '''
     sig_from = u''
+    sig_known = True
+    uid_trusted = False
 
     if isinstance(error_msg, str):
         error_msg = error_msg.decode('utf-8')
@@ -60,13 +62,11 @@ def add_signature_headers(mail, sigs, error_msg):
                     uid_trusted = True
                     break
             else:
-                # No trusted uid found, we did not break but drop from the
-                # for loop.
-                uid_trusted = False
+                # No trusted uid found, since we did not break from the loop.
                 sig_from = key.uids[0].uid.decode('utf-8')
-        except:
+        except GPGProblem:
             sig_from = sigs[0].fpr.decode('utf-8')
-            uid_trusted = False
+            sig_known = False
 
     if error_msg:
         msg = u'Invalid: {}'.format(error_msg)
@@ -75,7 +75,8 @@ def add_signature_headers(mail, sigs, error_msg):
     else:
         msg = u'Untrusted: {}'.format(sig_from)
 
-    mail.add_header(X_SIGNATURE_VALID_HEADER, 'False' if error_msg else 'True')
+    mail.add_header(X_SIGNATURE_VALID_HEADER,
+                    'False' if (error_msg or not sig_known) else 'True')
     mail.add_header(X_SIGNATURE_MESSAGE_HEADER, msg)
 
 
@@ -225,7 +226,7 @@ def message_from_file(handle):
     '''
     m = email.message_from_file(handle)
 
-    # make sure noone smuggles a token in (data from m is untrusted)
+    # make sure no one smuggles a token in (data from m is untrusted)
     del m[X_SIGNATURE_VALID_HEADER]
     del m[X_SIGNATURE_MESSAGE_HEADER]
 
@@ -264,14 +265,14 @@ def message_from_file(handle):
 def message_from_string(s):
     '''Reads a mail from the given string. This is the equivalent of
     :func:`email.message_from_string` which does nothing but to wrap
-    the given string in a StringIO object and to call
+    the given string in a BytesIO object and to call
     :func:`email.message_from_file`.
 
     Please refer to the documentation of :func:`message_from_file` for
     details.
 
     '''
-    return message_from_file(StringIO(s))
+    return message_from_file(BytesIO(s))
 
 
 def extract_headers(mail, headers=None):
@@ -297,16 +298,20 @@ def extract_headers(mail, headers=None):
 
 
 def extract_body(mail, types=None, field_key='copiousoutput'):
-    """
-    returns a body text string for given mail.
-    If types is `None`, `text/*` is used:
-    The exact preferred type is specified by the prefer_plaintext config option
-    which defaults to text/html.
+    """Returns a string view of a Message.
+
+    If the `types` argument is set then any encoding types there will be used
+    as the prefered encoding to extract. If `types` is None then
+    :ref:`prefer_plaintext <prefer-plaintext>` will be consulted; if it is True
+    then text/plain parts will be returned, if it is false then text/html will
+    be returned if present or text/plain if there are no text/html parts.
 
     :param mail: the mail to use
     :type mail: :class:`email.Message`
     :param types: mime content types to use for body string
-    :type types: list of str
+    :type types: list[str]
+    :returns: The combined text of any parts to be used
+    :rtype: str
     """
 
     preferred = 'text/plain' if settings.get(

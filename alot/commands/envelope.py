@@ -124,9 +124,8 @@ class SaveCommand(Command):
             return
 
         if account.draft_box is None:
-            ui.notify(
-                'abort: account <%s> has no draft_box set.' % envelope.get('From'),
-                priority='error')
+            msg = 'abort: Account for {} has no draft_box'
+            ui.notify(msg.format(account.address), priority='error')
             return
 
         mail = envelope.construct_mail()
@@ -146,8 +145,8 @@ class SaveCommand(Command):
                 ui.apply_command(globals.FlushCommand())
                 ui.apply_command(commands.globals.BufferCloseCommand())
             except DatabaseError as e:
-                logging.error(e.message)
-                ui.notify('could not index message:\n%s' % e.message,
+                logging.error(e)
+                ui.notify('could not index message:\n%s' % e,
                           priority='error',
                           block=True)
         else:
@@ -202,7 +201,7 @@ class SendCommand(Command):
             # receive a message that they cannot read!
             if self.envelope.headers.get('Bcc') and self.envelope.encrypt:
                 warning = textwrap.dedent("""\
-                    Any BCC recepients will not be able to decrypt this
+                    Any BCC recipients will not be able to decrypt this
                     message. Do you want to send anyway?""").replace('\n', ' ')
                 if (yield ui.choice(warning, cancel='no',
                                     msg_position='left')) == 'no':
@@ -217,7 +216,7 @@ class SendCommand(Command):
                 self.mail = email_as_string(self.mail)
             except GPGProblem as e:
                 ui.clear_notify([clearme])
-                ui.notify(e.message, priority='error')
+                ui.notify(str(e), priority='error')
                 return
 
             ui.clear_notify([clearme])
@@ -499,7 +498,7 @@ class SignCommand(Command):
                                                        sign=True)
                 except GPGProblem as e:
                     envelope.sign = False
-                    ui.notify(e.message, priority='error')
+                    ui.notify(str(e), priority='error')
                     return
             else:
                 try:
@@ -511,8 +510,8 @@ class SignCommand(Command):
                     return
                 if not acc.gpg_key:
                     envelope.sign = False
-                    ui.notify('Account for {} has no gpg key'.format(acc.address),
-                              priority='error')
+                    msg = 'Account for {} has no gpg key'
+                    ui.notify(msg.format(acc.address), priority='error')
                     return
                 envelope.sign_key = acc.gpg_key
         else:
@@ -571,7 +570,7 @@ class EncryptCommand(Command):
                     tmp_key = crypto.get_key(keyid)
                     del envelope.encrypt_keys[tmp_key.fpr]
             except GPGProblem as e:
-                ui.notify(e.message, priority='error')
+                ui.notify(str(e), priority='error')
             if not envelope.encrypt_keys:
                 envelope.encrypt = False
             ui.current_buffer.rebuild()
